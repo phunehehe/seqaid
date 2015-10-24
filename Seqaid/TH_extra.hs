@@ -155,6 +155,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   instance MonadCatch Ghc where
     catch   = gcatch
+
+  instance MonadMask Ghc where
     mask f =
        Ghc $ \s -> mask $ \io_restore ->
                               let
@@ -167,7 +169,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   -- | Either try to parse a source file or if the module is
   --   part of library, look it up and browse the contents
-  lookupModuleNames :: (MTL.MonadIO m, MonadCatch m, GhcMonad m)
+  lookupModuleNames :: (MTL.MonadIO m, MonadCatch m, MonadMask m, GhcMonad m)
                     => String -> m [TH.Name]
   lookupModuleNames mName = do
    target <- targetId <$> guessTarget mName Nothing
@@ -236,16 +238,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   instance GetNameMaybe (TyClDecl RdrName) where
      getNameMaybe = \case
-        ForeignType x _   -> getNameMaybe x
-#if __GLASGOW_HASKELL__ >= 707
         FamDecl x -> getNameMaybe $ fdLName x
         SynDecl  { tcdLName } -> getNameMaybe tcdLName
         DataDecl { tcdLName } -> getNameMaybe tcdLName
-#else
-        x@(TyFamily   {}) -> getNameMaybe $ tcdLName x
-        TyDecl    x _ _ _ -> getNameMaybe x
-#endif
-
         x@(ClassDecl {})  -> getNameMaybe $ tcdLName x
 
   instance GetNameMaybe (HsBindLR RdrName RdrName) where
