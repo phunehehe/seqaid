@@ -61,15 +61,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   where
 
 #include "ghcplatform.h"
-   
+
   import Language.Haskell.TH as TH
   import Data.Maybe
   import GHC
   import Module
   import GHC.Paths ( libdir )
-  import DynFlags 
+  import DynFlags
   import Name as Name
-  import RdrName 
+  import RdrName
   import MonadUtils
   import HsDecls as HsDecls
   import SrcLoc
@@ -94,7 +94,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   names :: Q [TH.Name]
   names = moduleNames . loc_filename =<< location
 
-  -- | Get all the top level names of a given module. 
+  -- | Get all the top level names of a given module.
   --   If a file path is used, all names, exported and internal
   --   are returned. If a module name is used, only the exported
   --   names are returned.
@@ -106,10 +106,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         setSessionDynFlags dflags
         lookupModuleNames target
 #else
-  moduleNames target = runIO $ 
-     defaultErrorHandler 
-        defaultFatalMessager 
-        defaultFlushOut 
+  moduleNames target = runIO $
+     defaultErrorHandler
+        defaultFatalMessager
+        defaultFlushOut
         $ do
            runGhc (Just libdir) $ do
              dflags <- getSessionDynFlags
@@ -119,7 +119,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if 0
 
-  -- | Look up a name, and get out the declaration 
+  -- | Look up a name, and get out the declaration
   --   or return nothing
   nameToMaybeDec :: TH.Name -> Q (Maybe Dec)
   nameToMaybeDec name = do
@@ -127,19 +127,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      return $ case info of
         TyConI dec -> Just dec
         _          -> Nothing
-        
-  -- | Get all the type declarations of the current file. 
+
+  -- | Get all the type declarations of the current file.
   --   Function and pattern declarations are ignored ... for now.
   declarations :: Q [Dec]
   declarations = mapMaybeM nameToMaybeDec =<< names
 
-  -- | Get all the top level names of a given module. 
+  -- | Get all the top level names of a given module.
   --   If a file path is used, all names, exported and internal
   --   are returned. If a module name is used, only the exported
   --   names are returned.
   --   Function and pattern declarations are ignored ... for now.
   moduleDeclarations :: String -> Q [Dec]
-  moduleDeclarations = mapMaybeM nameToMaybeDec <=< moduleNames 
+  moduleDeclarations = mapMaybeM nameToMaybeDec <=< moduleNames
 
 #endif
 
@@ -167,17 +167,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   -- | Either try to parse a source file or if the module is
   --   part of library, look it up and browse the contents
-  lookupModuleNames :: (MTL.MonadIO m, MonadCatch m, GhcMonad m) 
+  lookupModuleNames :: (MTL.MonadIO m, MonadCatch m, GhcMonad m)
                     => String -> m [TH.Name]
-  lookupModuleNames mName = do   
+  lookupModuleNames mName = do
    target <- targetId <$> guessTarget mName Nothing
    case target of
-      TargetModule moduleName -> getExistingModuleNames 
+      TargetModule moduleName -> getExistingModuleNames
                              =<< lookupModule moduleName Nothing
-      TargetFile filePath _   -> do 
+      TargetFile filePath _   -> do
          dflags            <- getSessionDynFlags
          opts              <- liftIO $ getOptionsFromFile dflags filePath
-         (newDFlags, unhandledFlags, _) <- 
+         (newDFlags, unhandledFlags, _) <-
             liftIO $ parseDynamicFilePragma dflags opts
          liftIO $ checkProcessArgsResult newDFlags unhandledFlags
          if (xopt Opt_Cpp newDFlags) then do
@@ -189,25 +189,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                    <- liftIO $ parseDynamicFilePragma newDFlags srcOpts
                liftIO $ checkProcessArgsResult newestDFlags unhandled_flags
                parseFile newestDFlags cppFilePath
-         else 
+         else
             parseFile newDFlags filePath
 
   -- | Turn ErrorMessages into a String
-  errString :: Show a => Bag a -> String     
-  errString = unlines 
-            . map show 
+  errString :: Show a => Bag a -> String
+  errString = unlines
+            . map show
             . foldBag (<>) (:[]) []
 
   -- | Parse a file and collect all of the declarations names
   parseFile :: GhcMonad m => DynFlags -> FilePath -> m [TH.Name]
   parseFile dflags filePath = do
-     src    <- liftIO $ readFile filePath 
-     let (warns, L _ hsModule) = 
+     src    <- liftIO $ readFile filePath
+     let (warns, L _ hsModule) =
            either (error . errString) id
                  $ parser src dflags filePath
-                                 
+
          names = mapMaybe getNameMaybe $ hsmodDecls hsModule
-       
+
      return $ map rdrNameToName names
 
   showModuleName :: Module -> String
@@ -221,7 +221,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                        <> showModuleName modl
                        <> " in getExistingModuleNames"
       Just mod_info -> fmap (map (occNameToName . nameOccName . getName))
-                    .  mapMaybeM lookupName 
+                    .  mapMaybeM lookupName
                     $  modInfoExports mod_info
 
   -- | Simple Class for getting the name of things
@@ -229,7 +229,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      getNameMaybe :: a -> Maybe RdrName
 
   instance GetNameMaybe (HsDecl RdrName) where
-     getNameMaybe = \case 
+     getNameMaybe = \case
         TyClD x -> getNameMaybe x
         HsDecls.ValD  x -> getNameMaybe x
         _           -> Nothing
@@ -238,33 +238,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
      getNameMaybe = \case
         ForeignType x _   -> getNameMaybe x
 #if __GLASGOW_HASKELL__ >= 707
-        FamDecl x -> getNameMaybe $ fdLName x 
+        FamDecl x -> getNameMaybe $ fdLName x
         SynDecl  { tcdLName } -> getNameMaybe tcdLName
         DataDecl { tcdLName } -> getNameMaybe tcdLName
 #else
         x@(TyFamily   {}) -> getNameMaybe $ tcdLName x
         TyDecl    x _ _ _ -> getNameMaybe x
 #endif
-      
+
         x@(ClassDecl {})  -> getNameMaybe $ tcdLName x
 
   instance GetNameMaybe (HsBindLR RdrName RdrName) where
-     getNameMaybe = \case 
-        x@(FunBind {}) -> getNameMaybe $ fun_id x 
+     getNameMaybe = \case
+        x@(FunBind {}) -> getNameMaybe $ fun_id x
         _                  -> Nothing
 
   instance GetNameMaybe a => GetNameMaybe (GenLocated SrcSpan a) where
-     getNameMaybe (L _ x) = getNameMaybe x 
+     getNameMaybe (L _ x) = getNameMaybe x
 
   instance GetNameMaybe RdrName where
      getNameMaybe = Just
 
   -- Name Utils
   occNameToName :: OccName -> TH.Name
-  occNameToName = mkName . occNameString 
+  occNameToName = mkName . occNameString
 
   rdrNameToName :: RdrName -> TH.Name
-  rdrNameToName = \case 
+  rdrNameToName = \case
      RdrName.Unqual x -> occNameToName x
      RdrName.Qual _ x -> occNameToName x
      RdrName.Orig _ x -> occNameToName x
