@@ -235,7 +235,7 @@
                    return x'')
 #elif 0
     x' = unsafePerformIO $ evaluate x'' `catch` f
--- catchJust :: Exception e => (e -> Maybe b) -> IO a -> (b -> IO a) -> IO a  
+-- catchJust :: Exception e => (e -> Maybe b) -> IO a -> (b -> IO a) -> IO a
     f = (\ () -> do
 #if 0
                     hPutStrLn stderr "EXCEPTION ACTION"
