@@ -274,13 +274,10 @@
 --  x'' = forcen 6 x
 #else
     pat' = pat
-    x'' | stats_query_idx <= (1+max_depth)
-           = forcep pat x  -- trying to use *n patterns instead
+    x''
+           = forcep (show pat) x  -- trying to use *n patterns instead
 ---        = forcep_ pat x  -- deprecated function!
 --         = forcen depth x
-        | otherwise
-           = forcep pat x
----        = forcep_ pat x  -- deprecated function!
 #endif
 #endif
 
@@ -324,7 +321,7 @@
    where
 --- !_ = trace t ()
     t = show $ typeOf x
-    x' | t == "TA"     = forcep fixed_pat x
+    x' | t == "TA"     = forcep (show fixed_pat) x
 --  x' | t == "State"  = forcep fixed_pat x
 --- x' | t == "TA"     = forcep_ fixed_pat x  -- deprecated function!
        | otherwise     = x
