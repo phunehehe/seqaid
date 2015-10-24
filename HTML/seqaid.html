@@ -1,0 +1,400 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Seqaid : Space leak diagnostic and remedial tool</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<!--body style="width: 800px;"-->
+
+<div class="main">
+
+<h2 style="margin-top: 50px; margin-bottom: 10px;">Seqaid</h2>
+<h3 style="margin-top: 12px; color: #666;">Space Leak Diagnostic and Remedial Tool</h3>
+
+If you&rsquo;re reading this, you probably don&rsquo;t need to be told that <span class="nowrap">space leak is</span> the bane of lazy languages like Haskell.
+
+<!-- http://neilmitchell.blogspot.ca/2013/11/acm-article-leaking-space.html -->
+Quoting <span class="nowrap">briefly from</span> <span class="nowrap">Neil Mitchell&rsquo;s 2013</span> <a href="http://queue.acm.org/detail.cfm?id=2538488">article</a> in <em>ACM Queue</em>:
+
+<p>
+<em style="display: block; margin-left: 15px; margin-right: 100px;">
+<p>
+&ldquo;[Writers of] compilers for lazy functional languages have been dealing with space leaks for more than 30 years and have developed a number of strategies to help.
+...
+Despite all the improvements, space leaks remain a thorn in the side of lazy evaluation, producing a significant disadvantage to weigh against the benefits.&rdquo;
+<p>
+&ldquo;Pinpointing space leaks is a skill that takes practice and perseverance. Better tools could significantly simplify the process.&rdquo;
+</em>
+
+<p>
+
+Seqaid (package <a href="http://hackage.haskell.org/package/seqaid">seqaid</a> on hackage) is a tool to help debug <span class="nowrap">space leak</span> <span class="nowrap">in Haskell</span> projects.
+
+<p>
+
+The key contribution of <!--a href="http://hackage.haskell.org/package/seqaid"-->seqaid<!--/a--> is runtime strictness optimisation, through dynamic, principled forcing, as supported by <a href="http://hackage.haskell.org/package/deepseq-bounded"><span class="nowrap">deepseq-bounded</span></a>.
+
+<p>
+
+This package consists of
+<ul>
+<a id="r1"></a>
+<li>a GHC plugin (to automate the instrumentation of modules)
+<li>a small library (used by the plugin; or for manual instrumentation)
+</ul>
+
+<p>
+
+Seqaid can auto-plug many <span>leaks.&nbsp;<a href="#1">[1]</a></span>
+<!--But there&rsquo;s still many it cannot help you with, at least without some coaxing on your part.-->
+However, not all leaks can be addressed by adding strictness;
+and, although most can (in my experience), usually these could also be addressed by refactoring in such a way that no added strictness was required.
+It may be that clues to such refactorings are offered by observation of optimal forcing patterns.
+
+<p>
+
+I believe that seqaid has potential to be a useful resource, but this is only a bare-bones first-version.
+<a id="r2"></a>
+The ultimate goal would be to see some evolution of this make it into compilers (perhaps even the GHC RTS), supposing a better solution hasn&rsquo;t arrived first.
+
+<p>
+
+Seqaid is more general-purpose than just a space leak tool.
+It contains TH and GHC plugin code to <span>automatically&nbsp;<a href="#2">[2]</a></span>
+instrument Haskell packages with an arbitrary wrapper function around select expressions.
+There&rsquo;s nothing (much) to stop you from substituting your own wrapper functions.
+When the dust settles here, I should probably try to split off a wrapper-agnostic auto-instrumentation tool.
+<p>
+We do not have the luxury of changing the types of the functions we&rsquo;re instrumenting, so passing extra state in any pure way is out of the question.
+In seqaid specifically, per-call-site data is maintained by judicious use of unsafe <tt>IORef</tt> operations.
+<!-- However, there are no safety implications in this case, as proven elsewhere. <a href="#3">[3]</a>&nbsp; -->
+The unsafe operations are no more dangerous than <tt>seq</tt> (no matter how wrong things go).
+<a id="r3"></a>
+But it is true that, technically, program semantics can be affected by strictification:
+Adding strictness to a program may introduce bottoms (in addition to any that might already be lurking).
+<p>
+<a id="using"></a>
+Happily, although <tt>seq</tt> breaks free theorems, <span>seqaid&nbsp;does&nbsp;not.&nbsp;<a href="#3">[3]</a></span>
+
+<!--You can do any IO you wish via manual instrumentation.-->
+
+<!--div style="margin-left: 15px;">
+Want to cut to the chase?<br>
+See the bottom of the page for a concise <a href="#contrib">contribution statement</a>.
+</div-->
+
+<!--
+
+<h3><red>OLD</red> (June 2014) Combing Out Global DeepSeq</h3>
+
+Control.DeepSeq and related generics/TH modules are a great tool for debugging space leaks, and also a great temptation for evading them.
+A common strategy is to start at a high level in leaking code (in the sense of high in the parse tree), finding a place where a forcing function will squash your leaks, and then working the forcer further down until the offending code has been discovered.
+For didactic purposes, let&rsquo;s suppose your forcing function is deepseq.
+Sometimes more than one site will have leaky code, so as the deepseq is moved down, it may have to be duplicated and branch out as well.
+<p>
+It would be nice to automate this process of refining the locations of deepseq.
+Something simple that should work is a binary partitioning of descendant expressions, into those which propagate the deepseq, and those which do not.
+Auto-recompilation and auto-profile-analysis can determine whether the change maintains leak-free behaviour, guiding the search for the smallest expressions which need forcing.
+The developer may prefer to force at a higher level, in case this minimal set is highly ramified (high cardinality), but mostly we&rsquo;re interested in those expressions deepest in the parse tree that, forced, suffice to staunch the leak.
+
+<p>
+
+The <a href="index.html">Heaply</a> page has more info on a nascent implementation.
+
+-->
+
+<p>
+
+<h3>Dynamically Configurable Parallelism</h3>
+
+With recent upgrades to <tt><span class="nowrap">deepseq-bounded</span></tt>, (the) dynamically-configurable parallelisation harness now comes for free, and should also prove useful.
+The strictness harness machinery of seqaid will work without change for this purpose, including the optimiser, and promises some interesting experiments!
+
+<h3>How to Use Seqaid</h3>
+
+A good introduction to using seqaid is generated by running <tt>seqaid demo</tt>.
+This will create a fresh, uniquely-named subdirectory in the current directory, and populate it with a sample project (<a href="http://hackage.haskell.org/package/leaky">leaky</a>), build it with seqaid auto-instrumentation in effect, and run it.
+The <tt>README</tt> file in the generated directory has more information about the meaning of the output.
+<!--The <tt>leaky.cabal</tt> file in the generated directory shows how to configure the plugin.-->
+<a id="r4"></a>
+
+<p>
+
+Note the file <tt>seqaid.config</tt>, a small text file with a very simple format which you write to control seqaid.
+Here is the <tt>seqaid.config</tt> file for leaky:
+
+<pre>
+package    leaky
+module     Main
+  binds    duty
+    types  Types.TA
+instances  Types.TA, Types.TB, Types.TC
+</pre>
+
+<p>
+This file instructs the seqaid preprocessor to build with a conditional forcing wrapper (strictness harness) for all subexpressions of type <tt>TA</tt> occurring in the equations of the bind <tt>duty</tt> in module <tt>Main</tt>.
+It furthermore instructs seqaid to automatically derive necessary instances for instrumenting user-defined data types <tt>Types.TA</tt> <span>etc.&nbsp;<a href="#4">[4]</a></span>
+<!--
+Note the file <tt>SeqaidTypes.hs</tt>, which is a stub you need to create, with imports of all types you want to be able to force through.
+(Most common types already have <tt>NFDataP</tt> instances provided, similar to <tt>NFData</tt>.)
+The actual meta-boilerplate to derive <tt>NFDataP</tt> instances of your types is auto-generated, which is perhaps a first for generic deriving support!
+The <tt>SeqaidTypes.hs</tt> stub, and the plugin options in the <tt>.cabal</tt> file, are the only edits required to use seqaid on your own project.
+-->
+
+<p>
+
+Besides the <tt>seqaid.config</tt> file, all that is needed to use seqaid on your own project are some additions to the .cabal file.
+This includes some extra dependencies (notably, seqaid; possibly a few others; Cabal will let you know), and the following GHC options:
+
+<pre>
+  ghc-options: -fplugin=Seqaid.Plugin
+               -F -pgmF seqaidpp
+               -XTemplateHaskell
+               -with-rtsopts=-T
+</pre>
+
+<p>
+Manual instrumentation is also supported, should you prefer.
+Simply wrap any expressions you&rsquo;d like in harness with a <tt>seqaid</tt> application.
+Although <tt>seqaid</tt> is not an actual function, from the user&rsquo;s perspective it must be treated as if it was, in the fixity/associativity context of each call site.
+For technical reasons <span style="font-size: 80%">[no good reason really...]</span>, this presently also requires adding a <a href="http://hackage.haskell.org/package/seqaid/docs/Seqaid-Ann.html#t:SeqaidAnnManual"><tt>SeqaidAnnManual</tt></a> annotation for each bind you edit.
+<!--span style="font-size: 80%;">[That document is still not written, but <tt>leaky</tt> at <tt>FORCING_STRATEGY=4</tt> is a demonstation.]</span-->
+
+<h3>Leaky Contrived to Showcase Seqaid?</h3>
+
+Some words about the derivation of leaky are <a href="extra.html">here</a>, where the output of seqaid applied to leaky is also discussed.
+
+<h3>Work in Progress...</h3>
+
+<a id="dig01s" class="dig-toggle-show" href='javascript:toggle("dig01");' style="margin-left: 20px;">Show</a>
+<div id="dig01" class="digression" style="margin-left: 20px;">
+<a id="dig01h" style="margin-bottom: -15px;" class="dig-toggle-hide" href='javascript:toggle("dig01");'>Hide</a><p style="margin-bottom: 0px;">
+I&rsquo;m just fretting that I should have investigated using a GHC API app as a GHC replacement instead, if by chance it can be done light-weight.
+Well, at worst the GHC program is only a bit over 1 MB in size.
+Er ... but compiling it is a serious build, this is not like any old cabal install from hackage...
+But also, it seems GHC API can be used with TH.
+The problem seems to be that due to staging restrictions you still cannot modify existing declarations this way.
+Best bet is really some plugin facility between Parser and Renamer/TC.
+</div>
+<p>
+Most all the work up till now has been to get the basic infrastructure in place.
+I hustled this preliminary version of seqaid together in the wake of writing the <a href="http://hackage.haskell.org/package/deepseq-bounded"><span class="nowrap">deepseq-bounded</span></a> library, just as proof of concept.
+Unfortunately, auto-instrumentation turned out to be a nightmare, particularly as I had no TH or Core programming experience, setting me back by more than a month...
+
+<p>
+So I&rsquo;ve determined to release <a href="http://hackage.haskell.org/package/leaky">leaky</a>, <a href="http://hackage.haskell.org/package/deepseq-bounded"><span class="nowrap">deepseq-bounded</span></a>, and <a href="http://hackage.haskell.org/package/seqaid">seqaid</a> without further delay.
+
+<p>
+After a much-needed vacation from these topics (which are not my interest; I&rsquo;m an applications programmer!...), there are a few more things I&rsquo;m intending to do.
+
+<p>
+<a style="display: none;" id="dig02s" class="dig-toggle-show" href='javascript:toggle("dig02");'>Show</a>
+<div style="display: inline-block;" id="dig02" class="digression" style="margin: 20px 100px 0px 30px;">
+<a style="display: block; margin-bottom: -15px;" id="dig02h" class="dig-toggle-hide" href='javascript:toggle("dig02");'>Hide</a><p style="margin-bottom: 0px;">
+From this point on (including note <a href="#3">[3]</a>), I may be talking nonsense in places.<br />
+I&rsquo;ll ammend this preliminary stuff subject to discussion and new learning.
+</div>
+
+<h4>Immediate priorities</h4>
+
+Two necessary things are still pending:
+
+<ul>
+<li>
+Dynamic optimisation of forcing patterns (easy, from here).
+<li>
+Exploiting heap entity info (perhaps via <a href="http://hackage.haskell.org/package/ghc-heap-view">ghc-heap-view</a>).
+</ul>
+
+<h4>Other issues and plans</h4>
+
+<ul>
+<!--
+<li>
+Seqaid currently wraps whole RHS&rsquo;s of declarations.
+This is ineffectual for monadic functions.
+Monadic functions can be manually instrumented by wrapping ("injecting at") subexpressions.
+Getting demand propagation right might be tricky.
+As for automating, the plugin already handles lambdas differently than other expressions, so monadic expressions could also be given special accomodation.
+-->
+<li>
+No performance tuning has been done yet.
+We need to see if it pays to run the plugin after the Core-to-Core optimisation phase &mdash; running it earlier may well interfere with GHC optimisation tactics.
+<li>
+There are a few desperate <tt>String/Regex</tt> hacks, at least some of which can probably be solved without resorting to that.
+<li>
+For top-level bind harnessing, seqaid currently issues a warning for (and omits wrapping of) any declaration having polymorphic type.
+These can however be manually instrumented.
+Working on automating for polymorphic types...
+This has become less of an issue with subexpression injection.
+<li>
+It is possible to transform away the <tt><span class="nowrap">deepseq-bounded</span></tt> code generated by seqaid, leaving only <tt>let</tt> and <tt>seq</tt>.
+If you were to accept a (constant) strictification offered by seqaid, you could emit it as a static <tt>let</tt>-and-<tt>seq</tt> code transformation.
+The point is, if your code was Haskell 98 to begin with, it will still be Haskell 98 afterwards, and also be significantly more performant than the high-level forcing harness of seqaid.
+<br />
+<!--p-->
+<a id="dig03s" class="dig-toggle-show" href='javascript:toggle("dig03");' style="margin: 10px 100px 10px 30px;">Show</a>
+<div id="dig03" class="digression" style="margin: 10px 100px 10px 30px;">
+<a id="dig03h"  style="margin-bottom: -15px;" class="dig-toggle-hide" href='javascript:toggle("dig03");'>Hide</a><p style="margin-bottom: 0px;">
+There is nothing intrinsically non-H98 about <tt><span class="nowrap">deepseq-bounded</span></tt>, but for generic deriving support GHC is needed.
+You could write your own <tt>NFDataP</tt> and superclass instances, and be H98 all the way.
+<tt><span class="nowrap">deepseq-bounded</span></tt> can be built in H98 mode with the flag <tt>HASKELL98_FRAGMENT</tt>...
+</div>
+<li>
+There is rich mathemetical structure underlying strictness manipulation (see for instance
+<a href="http://www.fremissant.net/deepseq-bounded/deepseq-bounded.html#fusion">fusion rules</a> in <tt><span class="nowrap">deepseq-bounded</span></tt>, and the <a href="http://hackage.haskell.org/package/deepseq-bounded/docs/Control-DeepSeq-Bounded-PatUtil.html">PatUtil</a> API; or, for more theoretical depth, the many articles published over the last 50 years on abstract interpretation, demand propagation, strictness analysis, evaluation transformers...).
+Whether before or after transforming to <tt>let</tt>-and-<tt>seq</tt>, there are opportunities for simplifying the forcing harness, while preserving strictness and value semantics.
+</ul>
+
+<h4>Maybe...</h4>
+
+It would be interesting to see whether instrumentation could be pushed further down the compilation pipeline, or even implemented "from the other side" in the RTS.
+We might say that RTS can perform reciprocal injection,
+and think of this as another level of injection deferral.
+
+<p>
+But the RTS is not a compilation stage of your code;
+it is a virtual machine (mostly written in C) which evaluates your code, so implementing seqaid in the RTS will probably be quite a departure from the above.
+
+<p>
+The new <tt>Seqable</tt> module of <tt><span class="nowrap">deepseq-bounded</span></tt> is a step in the right direction, but I&rsquo;ve not had time to really investigate it let alone document it.
+
+<p>
+And anyway, it turns out <tt>seq</tt> is completely desugared by the time it hits the simplifier, so we&rsquo;re dealing with Core <tt>let</tt> versus <tt>case</tt> antics, and not even function applications.
+
+<h3 style="margin-top: 50px; margin-bottom: 8px;">Notes</h3>
+
+<table>
+
+<tr id="1">
+<td>
+[1]
+</td>
+<td>
+See for example the <a href="http://www.haskell.org/haskellwiki/Space_Leak">Space Leak</a> haskellwiki <span>page.&nbsp;<a href="#r1">&#8682;</a></span>
+</td>
+</tr>
+
+<tr id="2">
+<td>
+[2]
+</td>
+<td>
+A preprocessor takes care of all necessary pragmas and imports.
+The TH and Core (plugin) code then work in tandem to complete the <span>refactoring.&nbsp;<a href="#r2">&#8682;</a></span>
+<br />
+<!--p-->
+<!-- a glitch with my version of chromium perhaps? (the padding) -->
+<!--span id="dig05s" onclick='toggle("dig05");' class="dig-toggle-show" style="margin-left: 30px; margin-top: 10px;">Show</span-->
+<!--
+<a id="dig05s" class="dig-toggle-show" href='javascript:toggle("dig05");' style="margin-left: 30px; margin-top: 10px;">Show</a>
+<div id="dig05" class="digression" style="margin-left: 30px; margin-right: 100px; padding-bottom: 1px; margin-top: 10px;">
+<a id="dig05h" style="margin-bottom: -15px;" class="dig-toggle-hide" href='javascript:toggle("dig05");' style="margin-bottom: 6px;">Hide</a><p style="margin-bottom: 0px;">
+LATER: See writings in /work/Projects/MiniProjects/Metaboiler/000-readme.
+I&rsquo;ve looked into it, and basically, yes we can avoid ALMOST all user edits to intrumentation target source modules.
+But if you have datatypes involved, and they don&rsquo;t have instances for Typeable, Data, and Generic, you will have to add these to the deriving clauses.
+<p>
+Or, better, add a single file importing all the types you need in instrumented code, and use -XStandaloneDeriving to "top them up" with instances.
+Then you only need to add this import to your instrumentation target source modules.
+And, as the preprocessor can inject imports, you need only provide the name as an argument to the preprocessor (or use a standard, fixed "Seqaid..." name), so actually STILL NO EDITS (excepting preprocessor) ARE NEEDED TO ANY ORIGINAL SOURCE FILES. Whew! It seems like there is always a way out...
+<p>
+All this is only needed for the <tt>deriveGeneric ''T</tt> for your types <tt>T</tt>.
+But we cannot avoid the user having to add at least the "deriving instance" lines for their types, because TH cannot splice a "deriving instance" (-XStandaloneDeriving) to date (and TH cannot add/augment "deriving" clauses of existing types). [It looks like it&rsquo;s just coming down the pipes however.]
+<p>
+[Old sentences, used to be in body of document:]
+The TH and Core (plugin) code work in tandem to make this possible, with the addition of two lines of code to each module the user wants instrumented.
+And these two lines are both constants, and can safely be automatically inserted by an editing script.
+(There&rsquo;s no way to do that with the GHC tools, that I know of. -F -pgmF -optF, but still isn&rsquo;t there some issue about temp files? I seem to recall from FreeSect...)
+-->
+</div>
+</td>
+</tr>
+
+<tr id="3">
+<td>
+[3]
+</td>
+<td>
+Patricia Johann and Janis Voigtl&auml;nder (2004),<br />
+<em>Free Theorems in the Presence of <tt class="virgin">seq</tt></em>
+<ul>
+<li>
+<a href="http://www.researchgate.net/publication/2898699_Free_Theorems_in_the_Presence_of_seq">Paper</a>
+<li>
+<a href="http://www.janis-voigtlaender.eu/papers/TheImpactOfSeqOnFreeTheoremsBasedProgramTransformations.pdf">Another...</a>
+<li>
+<a href="http://www.janis-voigtlaender.eu/seq-slides.pdf">...with Slides</a>
+</ul>
+
+We avoid this problem entirely, because seqaid never modifies the original source code:
+generic strictifying code is injected during compilation, and then configured dynamically.
+Thus there is no impediment to program transformation based on free theorems.
+Since parts of the GHC simplifier depend on free theorems, it is necessary to inject seqaid instrumentation after these optimisation phases.
+This also seems to indicate the desireability of an RTS solution.
+<p>
+Of course, FT transformations may affect the space use behaviour of your program, resulting in shifts in optimal forcing patterns, like rocks tumbling in the freshet will shift the rapids.
+If performance tuning was your game, you could even turn the tide and use feedback from seqaid to search for optimising transformations...
+<p style="margin-bottom: 0px;">
+In case you are somehow able to perform your transformations at runtime, even that is no problem.
+You don&rsquo;t even need to turn off the plugin!
+The forcing harness can be made truly transparent
+<!-- (<em>i.e.</em>&nbsp;not a single <tt>seq</tt> introduced) -->
+by simply asking it, dynamically and selectively, to lay off while you <span>transform.&nbsp;<a href="#r3">&#8682;</a></span>
+</td>
+</tr>
+
+<tr id="4">
+<td>
+[4]
+</td>
+<td>
+The instances required are some subset of <tt>Typeable</tt>, <a href="http://hackage.haskell.org/package/generics-sop">SOP</a> <tt>Generic</tt>, and <tt>NFDataP</tt> and superclasses, and the exact set currently depends on Cabal flags.
+<p>
+Another point to note about the seqaid preprocessor concerns inlining.
+GHC inlines very aggressively, even across module boundaries.
+If you&rsquo;ve requested instrumentation of bind <tt>duty</tt>, but somehow <tt>duty</tt> is inlined before the Core plugin runs, the expressions you hoped to harness will slip through the net.
+If you can afford a complete (blanket) harness, this problem will never arise, as it has to be inlined <em>somewhere</em>!
+Another possible solution would be to have TH add a <tt>NOINLINE</tt> pragma to any binds mentioned in <tt>seqaid.config</tt>;
+but weakening the inlining powers of a functional language compiler is generally a bad idea &mdash; not just for the function call overhead: it blocks potential optimisations at the call site.
+So both of these solutions come at a performance cost, but both guarantee your fish will go to <span>market.&nbsp;<a href="#r4">&#8682;</a></span>
+</td>
+</tr>
+
+</table>
+
+<div class="comments" style="margin-top: 30px; margin-left: 20px;" onclick="javascript:document.location.href = 'http://www.reddit.com/r/haskell/comments/2pscxh/ann_deepseqbounded_seqaid_leaky/';">
+<a href="http://www.reddit.com/r/haskell/comments/2pscxh/ann_deepseqbounded_seqaid_leaky/"><b>Discussion</b></a><br /><span style="font-size: 60%;"><a style="display: inline-block; color: black; position: relative; top: -8px; href="http://www.reddit.com/r/haskell/comments/2pscxh/ann_deepseqbounded_seqaid_leaky/">(reddit)&nbsp;</a></span>
+</div>
+
+<div class="footer" style="margin-top: 40px;">
+Andrew Seniuk 2014
+<br>
+<tt>rasfar@gmail.com</tt>
+</div>
+
+</div>
+
+<script language="javascript">
+function toggle(id1){
+  var ele_s = document.getElementById(id1+"s");
+  var ele_h = document.getElementById(id1+"h");
+  var ele = document.getElementById(id1);
+  if( ele.style.display == "inline-block" ){
+    ele.style.display = "none";
+    ele_s.style.display = "inline-block";
+    ele_h.style.display = "none";
+  }else{
+    ele.style.display = "inline-block";
+    ele_s.style.display = "none";
+    ele_h.style.display = "block";
+  }
+}
+</script>
+
+</body>
+</html>
+

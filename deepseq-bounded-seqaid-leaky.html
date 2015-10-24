@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>ANN : deepseq-bounded, seqaid, leaky</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<link rel="stylesheet" href="deepseq-bounded-seqaid-leaky.css" />
+</head>
+<body>
+<!--body style="width: 800px;"-->
+
+<div class="main">
+
+<h2 style="margin-top: 50px; color: #555;">deepseq-bounded, seqaid, leaky</h2>
+
+This trio of related packages explores strictness control in a variety of ways.
+
+<p>
+<a href="http://www.fremissant.net/deepseq-bounded">deepseq-bounded</a> provides classes and generic functions to artificially force evaluation, to extents controlled by static or dynamic configuration.
+
+<p>
+<a href="http://www.fremissant.net/seqaid">seqaid</a> puts that into practise, providing a GHC plugin to auto-instrument your package with a strictness harness, which is dynamically optimisable during runtime.
+This is supported directly in the GHC compilation pipeline, without requiring (or performing!) any edits to your sources.
+
+<p>
+<a href="http://www.fremissant.net/leaky">leaky</a> is a minimal, prototypic executable that leaks space under current <span class="nowrap">state-of-the-art</span> compilation (even with <span class="nowrap">-O2 GHC <a href="https://downloads.haskell.org/~ghc/7.10.1-rc1/">7.10.1-rc1</a></span>; but certainly <span class="nowrap">with -O2 GHC 7.8.*</span>).
+
+<p>
+On hackage.haskell.org:
+<ul>
+<li> <a href="https://hackage.haskell.org/package/deepseq-bounded">deepseq-bounded</a>
+<li> <a href="https://hackage.haskell.org/package/seqaid">seqaid</a>
+<li> <a href="https://hackage.haskell.org/package/leaky">leaky</a>
+</ul>
+
+<p>
+I've started a <a href="http://www.reddit.com/r/haskell/comments/2pscxh/ann_deepseqbounded_seqaid_leaky/">reddit discussion</a> page for the three together.
+
+<p>
+Easiest way to try them all, is to install seqaid and run the demo:
+
+<pre>
+  cabal install seqaid
+  seqaid demo
+</pre>
+
+<p>
+This tests seqaid on a local copy of the leaky source package.
+
+<p>
+It turned out to be routine to extend deepseq-bounded and seqaid to dynamically configurable parallelisation (paraid?).
+Many other wrappers could be explored, too!
+Maybe seqaid should be renamed to koolaid or something...
+
+<p>
+It's a pretty complicated system, and just first release, so there's bound to be lots of problems.
+For now, any issues or comments can be directed to the reddit page (or private email).
+There's also the list announcement threads on <tt>haskell-cafe</tt> and <tt>glasgow-haskell-users</tt> for general discussion, and on <tt>ghc-devs</tt> for technical.
+I'll maintain a <a href="http://www.fremissant.net/seqaid/trac">casual list</a> of bugs and feature requests, and will set up a proper tracker if there's interest.
+
+<div class="footer" style="margin-top: 40px;">
+Andrew Seniuk 2014
+<br>
+<tt>rasfar@gmail.com</tt>
+</div>
+
+</div>
+
+<script language="javascript">
+function toggle(id1){
+  var ele_s = document.getElementById(id1+"s");
+  var ele_h = document.getElementById(id1+"h");
+  var ele = document.getElementById(id1);
+  if( ele.style.display == "inline-block" ){
+    ele.style.display = "none";
+    ele_s.style.display = "inline-block";
+    ele_h.style.display = "none";
+  }else{
+    ele.style.display = "inline-block";
+    ele_s.style.display = "none";
+    ele_h.style.display = "block";
+  }
+}
+</script>
+
+</body>
+</html>
+

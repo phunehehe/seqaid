@@ -1,0 +1,35 @@
+
+** 0.3.0.1 -> 0.4.0.0
+ - deepseq-bounded major version bump again (OverloadedStrings! yummy)
+ - there'll be two or three of these over the next month or so, then
+   thing'll likely get pretty quiet
+
+0.3.0.0 -> 0.3.0.1
+ - still trying to decide on policy regarding cpphs
+ - this is all motivated by one pesky rogue anonymous build spammer
+ - had a spot of trouble over this, but learned a few tricks
+ - hopefully this upload is the ticket; sorry for the extra version uploads
+
+** 0.2.1.1 -> 0.3.0.0
+ - deepseq-bounded major version bump
+
+0.2.1.0 -> 0.2.1.1
+ - added a non-manual USE_CPPHS flag to seqaid.cabal, which should
+   in principle allow the client build system to try cpphs first, and
+   if that build fails, then try again with a native cpp if there's
+   one in the path (which is usually the case)
+    - this auto-toggle works for me with GHC 7.8.4 and Cabal 1.22.0.0
+    - what is the oldest version of cabal-install that this
+      auto-toggling will happen in?...
+ - improvements in platform-dependent handling in Demo.hs
+ - and also in choice of leaky version in Demo.hs
+
+0.2.0.0 -> 0.2.1.0
+ - realised I should be using Manual: True in all my .cabal flags,
+   or else the constraint solver is free to toggle them!!
+
+** 0.1.7.0 -> 0.2.0.0
+ - deepseq-bounded had a major version bump
+ - fixed cpphs missing dependency (Seqaid lib, and seqaid and seqaidpp exe's)
+ - more...
+

@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Seqaid : Space leak diagnostic and remedial tool - Contrived?</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<!--body style="width: 800px;"-->
+
+<div class="main">
+
+<h3 style="margin-top: 50px; margin-bottom: 30px; color: #666;">
+Comparison with prior version
+</h3>
+
+<p style="margin-top: 16px;">
+Previously, using an older version of shrinkPat, it worked out more smoothly, as shown below; so the listing <span class="strikeout">above</span> [at <a href="extra.html">this</a> page] is rather longer [not anymore] and raises some questions I don&rsquo;t yet have answers for, but the net result is the same, and the comments <span class="strikeout">following</span> [at that link] are all still valid.
+
+<p>
+(Actually, the numbers have not worked out quite this way for a long time anyway; this portays results from pre-published versions...).
+
+<p>
+Seeing these side-by-side (as it were...) is giving me a whistful feeling about the old pattern syntax. Fortunately, whether to use braces or parens, and whether to use !/. or ./#, are still options available through the deepseq-bounded package flags.
+
+<pre>
+                                       live      alloc  type
+  P  .                               457296    3341600    TA
+  P  {...}                           698872    5220200    TA
+  P  {{...}..}                       954252    6063164    TA
+  P  {{..{.}}..}                    1243156    6572740    TA
+  P  {{..{{.#..}}}.{..}}            1452016    8829248    TA
+  P  {{.{.}{{{.}#.{.}}}}.{.{.}}}     319744   10577588    TA
+  P  {{.{.}{{{.}#.{.}}}}.{.{.}}}     159284    8870360    TA
+  P  {{.{.}{{{.}#.{.}}}}.{.{.}}}     150004    8826904    TA
+  P  {{.{.}{{{.}#.{.}}}}.{.{.}}}     190012    8748076    TA
+  P  {{.{.}{{{.}#.{.}}}}.{.{.}}}     128232    8867404    TA
+</pre>
+And with the new concrete syntax, but same old shrinkPat used:
+<pre>
+                                       live      alloc  type
+  P  !                               457296    3341600    TA
+  P  (!!!)                           698872    5220200    TA
+  P  ((!!!)!!)                       954252    6063164    TA
+  P  ((!!(!))!!)                    1243156    6572740    TA
+  P  ((!!((!.!!)))!(!!))            1452016    8829248    TA
+  P  ((!(!)(((!).!(!))))!(!(!)))     319744   10577588    TA
+  P  ((!(!)(((!).!(!))))!(!(!)))     159284    8870360    TA
+  P  ((!(!)(((!).!(!))))!(!(!)))     150004    8826904    TA
+  P  ((!(!)(((!).!(!))))!(!(!)))     190012    8748076    TA
+  P  ((!(!)(((!).!(!))))!(!(!)))     128232    8867404    TA
+</pre>
+This seems like a usability regression, but the truth is, this is an extreme case, and normally &lsquo;!&rsquo; characters will be infrequent, and &lsquo;.&rsquo; characters (which do no forcing) will typically predominate amongst leaves of a pattern. Still, if going to prefer parens to braces, might like to reconsider &lsquo;!&rsquo; as it is visually too similar to a parenthesis. Some of these issues can be resolved by adding whitespace within the pattern strings (which is permitted). Also, much depends on fonts, and if colour of even greyscale is available this may be a non-issue.
+<p>
+In fact, to show how beneficial vertical alignment is to the human perception, let&rsquo;s see the new output (more interesting initial sequence) with padding added by hand:
+<pre>
+ P  .                                  232448    1776868  TA
+ P  (                         )        302720    1719280  TA
+ P  (.                 ..     )        372968    3057960  TA
+ P  ((                )..     )        442528    3579160  TA
+ P  ((..  .           )..     )        507104    4907900  TA
+ P  ((..  ()          )..     )        579448    5364696  TA
+ P  ((..  (.)         )..     )        640096    5853972  TA
+ P  ((..  (()        )).(    ))        739964    6867304  TA
+ P  ((..  ((.  ...  ))).(..  ))        833820    9551912  TA
+ P  ((.() ((() ..() ))).(.() ))        918912    9564540  TA
+ P  ((.(.)(((.)..(.)))).(.(.)))       1006188   11230432  TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        204624   14250596  TA
+</pre>
+At which point I notice that shrinkPat is wrong...
+Anyway, does that even help much?  It seems like a person wants more
+than ASCII graphics to cope with this...
+<p>
+Correct sequence for shrinkPat should be like (for example):
+<pre>
+     (.(!))           (!(!))          (!(.!))
+     (.(.))           (.(.))          (.(..))
+     (.!)      or     (.!)      or    (.!)
+     (..)             (..)            (..)
+     !                !               !
+     .                .               .
+</pre>
+And certainly, you don&rsquo;t produce ()&rsquo;s!
+<p>
+(Later: Even the above is wrong; discussed in <a href="http://www.fremissant.net/deepseq-bounded/deepseq-bounded.html#afterthoughts">afterthoughts</a> in the <tt>deepseq-bounded</tt> homepage.)
+<p>
+After fixing that:
+<pre>
+ P  .                                227756    1769792    TA
+ P  <span style="color: #BBB;">(</span>.                 ..     <span style="color: #BBB;">)</span>      296620    3060904    TA
+ P  <span style="color: #BBB;">(</span>(..  .           )..     <span style="color: #BBB;">)</span>      360508    4908612    TA
+ P  <span style="color: #BBB;">(</span>(..  (.         ))..     <span style="color: #BBB;">)</span>      421472    5852124    TA
+ P  <span style="color: #BBB;">(</span>(..  ((.  ...  ))).(..  )<span style="color: #BBB;">)</span>      521860    9556760    TA
+ P  <span style="color: #BBB;">(</span>(.(.)(((.)..(.)))).(.(.))<span style="color: #BBB;">)</span>      607100   11270660    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>     1925776    2392040    TA
+</pre>
+<p>
+What the heck, I&rsquo;ll paste that <span class="strikeout">above</span>, although it is hand-padded...
+<p>
+And here&rsquo;s what had in main document before the shrinkPat fix, as I don&rsquo;t have the heart to delete it yet. :)
+<pre style="margin-bottom: 0px;">
+                                       live      alloc    type
+ P  .                                  232448    1776868    TA
+ P  ()                                 302720    1719280    TA
+ P  (...)                              372968    3057960    TA
+ P  (()..)                             442528    3579160    TA
+ P  ((...)..)                          507104    4907900    TA
+ P  ((..())..)                         579448    5364696    TA
+ P  ((..(.))..)                        640096    5853972    TA
+ P  ((..(())).())                      739964    6867304    TA
+ P  ((..((....))).(..))                833820    9551912    TA
+ P  ((.()((()..()))).(.()))            918912    9564540    TA<!-- 8 lines cut; exact output depends on seed chosen etc. -->
+<span style="color: #F00; font-size: 80%;">*</span>
+ P  ((.(.)(((.)..(.)))).(.(.)))       1006188   11230432    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        204624   14250596    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        208800   11236580    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        213112   11242000    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        217436   11353868    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        221852   11250772    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        126192   11275044    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        130876   11131820    TA
+</pre>
+<!--
+ P  ((!(!)(((!).!(!))))!(!(!)))       1649020    2357840    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))       2326012    2416660    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))       3003004    2412660    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))       3647228    2379892    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))       3207456   10209292    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))       2382464   13247360    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))       1590240   13251400    TA
+ P  ((!(!)(((!).!(!))))!(!(!)))        594664   14446332    TA
+-->
+<span style="margin-left: 32px; margin-top: 0px; font-size: 70%;">
+<span style="color: #F41;">*</span>
+<span style="color: black; font-size: 80%;">
+8 lines cut; exact output depends on seed chosen etc.
+</span>
+</span>
+
+<div class="footer">
+Andrew Seniuk
+<br>
+<span style="margin-left: 4px; font-size: 90%;">January 2015</span>
+<br>
+<tt style="font-size: 85%;">rasfar@gmail.com</tt>
+</div>
+
+</div>
+
+<script language="javascript">
+function toggle(id1){
+  var ele_s = document.getElementById(id1+"s");
+  var ele_h = document.getElementById(id1+"h");
+  var ele = document.getElementById(id1);
+  if( ele.style.display == "inline-block" ){
+    ele.style.display = "none";
+    ele_s.style.display = "inline-block";
+    ele_h.style.display = "none";
+  }else{
+    ele.style.display = "inline-block";
+    ele_s.style.display = "none";
+    ele_h.style.display = "block";
+  }
+}
+</script>
+
+</body>
+</html>
+

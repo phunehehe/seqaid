@@ -1,0 +1,103 @@
+
+  ----------------------------------------------------------
+
+  Seqaid : Space Leak Diagnostic and Remedial Tool
+
+  Andrew Seniuk
+  rasfar@gmail.com
+  2014
+
+  ----------------------------------------------------------
+
+  The easiest way to get started with seqaid is
+
+     cabal install seqaid
+     seqaid demo
+
+  This will create a fresh directory, populate
+  it with the <leaky> test project, and configure,
+  build and run it with seqaid instrumentation.
+  Consult the leaky.cabal, README, and leaky.hs files
+  in that directory for additional information.
+  (The README explains the console output.)
+
+  ----------------------------------------------------------
+
+  To instrument your own project ("myapp" for didactic purposes),
+  typically the following steps suffice:
+
+    1. cabal install seqaid, of course.
+
+    2. Add the following (at the appropriate level of indentation)
+       to your myapp.cabal file:
+
+         default-extensions:  TemplateHaskell
+         ghc-options:         -fplugin=Seqaid.Plugin
+         ghc-options:         -F -pgmF seqaidpp
+         ghc-options:         -with-rtsopts=-T
+
+    3. Create a seqaid.config file in the project dir.
+       The preprocessor will parse this, and control
+       the extent of the instrumentation harness.
+
+       There is no mechanism yet for real blanket
+       instrumentation: You must name at least
+       the modules you want instrumented, and the
+       types you're interested in.  All binds in
+       a module will be covered however.
+
+       Looking at the seqaid.config file for leaky:
+
+         package    leaky
+         module     Main
+           binds    duty
+             types  Types.TA
+         instances  Types.TA, Types.TB, Types.TC
+
+       is this was changed to
+
+         package    leaky
+         module     Main
+         types      Types.TA
+         instances  Types.TA, Types.TB, Types.TC
+
+       then all binds in module Main will be instrumented at
+       all subexpressions having type Types.TA.
+
+       The instances line names types you need to be able
+       to force through.  If you get missing instance errors
+       when you build, then you probably need to add those
+       types to this list.
+
+  ----------------------------------------------------------
+
+  When the preprocessor runs, it will parse the configuration
+  from seqaid.config, and perform the requisite insertions and
+  substitutions behind the scenes.
+
+    NOTE: This will never ever edit your source files directly!
+    GHC takes care of running the preprocessor (-F option) on
+    its own temporary files, in the natural course of the
+    compilation pipeline.
+
+  ----------------------------------------------------------
+
+  The other project inseparable from this is <deepseq-bounded>.
+
+  More specific information resides in
+   - this document, and links from it:
+       http://www.fremissant.net/deepseq-bounded-seqaid-leaky
+   - reddit thread(s): http://www.reddit.com/r/haskell/comments/2pscxh/ann_deepseqbounded_seqaid_leaky/
+   - the Haddock API docs for <seqaid> and <deepseq-bounded>
+   - haskell.org mailing list thread(s), for instance:
+       http://web.archiveorange.com/archive/v/nDNOvlhf3EjknkvBbCya
+
+  And to a lesser extent, sporadic bits of information can also
+  be found in files in the source distribution
+   - the project README and .cabal files
+   - comments in the source files [tend to obsolescence]
+
+  Subsequent versions will hopefully be more cohesive.
+
+  ----------------------------------------------------------
+

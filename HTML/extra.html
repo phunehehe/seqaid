@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Seqaid : Space leak diagnostic and remedial tool - Contrived?</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<!--body style="width: 800px;"-->
+
+<div class="main">
+
+<h3 style="margin-top: 50px; margin-bottom: 30px; color: #666;">
+Is the <tt>leaky</tt> Example Contrived?
+</h3>
+
+Some words may be in order about where <tt>seqaid</tt> and <tt>leaky</tt> came from, and how this all fits together.
+<tt>seqaid</tt> was the first of this group of projects, started in June (2014).
+At that time, it was a GHC API application, and there&rsquo;s been a fair amount of water under the bridge since then.
+In July I conceived of <tt><span class="nowrap">deepseq-bounded</span></tt> based on considerations while pushing <tt>seqaid</tt>.
+August I was on hiatus, then finished <tt><span class="nowrap">deepseq-bounded</span></tt>, but wanted to see if I could plug it in to <tt>seqaid</tt> and maybe release them together.
+
+<p>
+Up till then, I&rsquo;d been using <tt>Anatomy</tt> as my main space leak example, but it stopped leaking in GHC 7.8.1 (if not earlier).
+<!-- hide/show
+I was also unaccountably unable to get it to leak for me anymore with GHC 7.6.3, and I still don&rsquo;t understand...
+(It&rsquo;s <em>not</em> a path problem this time!)
+-->
+I needed a good, robust space leak example to test my work on.
+
+<p>
+At the same time, I was dissatisfied with <tt>seqaid</tt> as a GHC API executable, because I wanted something more seamless to the user, like GHC plugins.
+So I foolishly went down a very deep rabbit hole to re-write <tt>seqaid</tt> as a GHC plugin, which finally was only possible by also using Template Haskell <em>and</em> a text-level (regex) pre-processor (GHC -F option).
+It is seamless to the user, but the code is quite a bit less elegant than the GHC API executable.
+(Which wasn&rsquo;t elegant to begin with.)
+<!-- hide/show
+In retrospect I should have spent that effort making the GHC API executable work as a stand-in for GHC, so in your project .cabal file you&rsquo;d specify seqaid as an alternative compiler.
+Oh well.
+Probably discussion will help decide the best future course.
+-->
+I don&rsquo;t regret learning TH and Core, and the several other things learned on this adventure.
+But I would not recommend programming in Core unless you really need to, or you know (really know) that what you need to do is well-supported that late in the compilation pipeline.
+
+<p>
+So, I was making adventures into GHC plugins, and I needed a dependable leak example.
+<!-- hide/show
+I guess that was September.
+September/October was a bit disrupted, as I moved across the country, but then had a funeral to return for.
+-->
+What I did was take my most recent GHC (7.8.1), and try to write a small program that exhibited a space leak, because I didn&rsquo;t have a single small example, although I have numerous large ones. :)
+I documented this process (I always keep a play-by-play text file with any project or subproject), but I won&rsquo;t review it now.
+Suffice it to say, <tt>leaky</tt> was designed to resemble a &ldquo;real-world program&rdquo;, in the choice of data types, and in the &ldquo;steady-state, long-running&rdquo; behaviour, with data accumulation/transmutation.
+I didn&rsquo;t rest until I had it leaking with GHC 7.8.1 under -O2, even with all strict fields in the data structures.
+(It still leaks in 7.8.4 and <a href="https://downloads.haskell.org/~ghc/7.10.1-rc1/">7.10.1-rc1</a>.)
+
+<p>
+During that battle of wits with the compiler, I wasn&rsquo;t really thinking about <tt><span class="nowrap">deepseq-bounded</span></tt> or <tt>seqaid</tt>, so the leak example was not contrived with these tools in mind (although they already existed, particularly <tt><span class="nowrap">deepseq-bounded</span></tt> which was finished).
+
+<p>
+Now that I had a leak example, I was ready to test my leak-plugging tools.
+I added a deep list to the state, so that while <tt>NFData</tt>/<tt>force</tt> could be used to plug the leak, it incurred an arbitrarily-large performance hit.
+In this respect, there was some contrivance, as I wanted to show how <tt>NFDataN</tt> could outperform <tt>NFData</tt> when used in a similar manner.
+Then of course I wanted to show how <tt>NFDataP</tt> could outperform them both.
+I adorned the state with some large strict blobs, which <tt>NFDataN</tt> cannot avoid, but <tt>NFDataP</tt> can.
+The optimal forcing pattern used with <tt>NFDataP</tt> was hand-written.
+To date, the optimiser part of <tt>seqaid</tt> is planned but still unimplemented.
+
+<p>
+I think the example is valid (realistic), notwithstanding these contrivances.
+There hasn&rsquo;t been time yet to put the new tools to work on my real projects.
+<tt>seqaid</tt> in particular is just breaking out of its shell.
+I&rsquo;ll be reporting progress as it becomes feasible.
+
+<p>
+The following shows the output of <tt>seqaid</tt> with <tt>leaky</tt>.
+It is also a wee bit contrived, as I sweep <tt>NFDataN</tt> <tt><em>N</em></tt> value to a fixed depth, and then the fixed (hand-optimised) pattern is developed by replaying iterated <tt>shrinkPat</tt> in reverse.
+But it does illustrate the sorts of effects possible, once <tt>seqaid</tt> has an optimiser.
+
+<p>
+Using <tt>NFDataN.forcen <em>N</em></tt>:
+<pre>
+                                       live      alloc  type
+  N  0                               357828    3350236    TA
+  N  1                               686376    3316512    TA
+  N  2                               909104    4942636    TA
+  N  3                              1121052    4979364    TA
+  N  4                              1301872    5560432    TA
+  N  5                              1609760   53440684    TA
+  N  6                               151460   54431296    TA
+  N  7                               139240   53374284    TA
+  N  8                               129440   53405380    TA
+</pre>
+<p>
+Using <tt>NFDataP.forcep <em>P</em></tt>:
+<pre style="margin-bottom: 0px;">
+                                       live      alloc  type
+ P  .                                227756    1769792    TA
+ P  <span style="color: #BBB;">(</span>.                 ..     <span style="color: #BBB;">)</span>      296620    3060904    TA
+ P  <span style="color: #BBB;">(</span>(..  .           )..     <span style="color: #BBB;">)</span>      360508    4908612    TA
+ P  <span style="color: #BBB;">(</span>(..  (.         ))..     <span style="color: #BBB;">)</span>      421472    5852124    TA
+ P  <span style="color: #BBB;">(</span>(..  ((.  ...  ))).(..  )<span style="color: #BBB;">)</span>      521860    9556760    TA
+ P  <span style="color: #BBB;">(</span>(.(.)(((.)..(.)))).(.(.))<span style="color: #BBB;">)</span>      607100   11270660    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>     1925776    2392040    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>     1529652   10297768    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>     1249900    2393836    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>      690336   13244056    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>      212580   13974556    TA
+ P  <span style="color: #BBB;">(</span>(!(!)(((!).!(!))))!(!(!))<span style="color: #BBB;">)</span>      216936   11284560    TA
+</pre>
+
+<p>
+A sort of <a href="extra2.html">commentary</a> on the change history is on a separate page.
+
+<h3 style="margin-top: 40px;">Remarks</h3>
+<ul>
+<li>You can see the space leak as a steady, substantial growth in the heap size, from <tt><em>N</em></tt> equal 0 through 5, and again in the first five pattern lines.
+<li>You can see the first large, strict blobs get hit at a depth of 5 (with <tt>forcen</tt>).
+<li>Unfortunately :) it is not until a depth of 6 that the leak can be plugged. (Well, you can plug it without forcing the spine, using let-lifting, but <tt>seqaid</tt> doesn&rsquo;t do that yet.) So <tt>NFDataN</tt> is not a feasible solution for this leak.
+<li><tt>NFDataP.forcep</tt> successfully plugs the leak without hitting the big strict blobs.
+<li>This output doesn&rsquo;t show how <tt>NFData</tt> would perform worse, but for large <tt><em>N</em></tt> there is additional penalty due to the presence of some long lists (not strict, but deep) in the state.
+<!--<li>It may appear there is still a slight leak in the heap, with the final pattern, but if the run is extended, this space is reclaimed periodically.
+I don&rsquo;t quite understand this, since I am using <tt>performGC</tt> before each stats line is printed, but the fact is there is no longitudinal net growth.
+(Oops, I don&rsquo;t see it in this paste anyways...).-->
+</ul>
+
+<div class="footer">
+Andrew Seniuk
+<br>
+<span style="margin-left: 4px; font-size: 90%;">Dec. 2014</span>
+<br>
+<tt style="font-size: 85%;">rasfar@gmail.com</tt>
+</div>
+
+</div>
+
+<script language="javascript">
+function toggle(id1){
+  var ele_s = document.getElementById(id1+"s");
+  var ele_h = document.getElementById(id1+"h");
+  var ele = document.getElementById(id1);
+  if( ele.style.display == "inline-block" ){
+    ele.style.display = "none";
+    ele_s.style.display = "inline-block";
+    ele_h.style.display = "none";
+  }else{
+    ele.style.display = "inline-block";
+    ele_s.style.display = "none";
+    ele_h.style.display = "block";
+  }
+}
+</script>
+
+</body>
+</html>
+

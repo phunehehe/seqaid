@@ -1,0 +1,70 @@
+
+pre { font-size: 12pt; margin-left: 20px; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px; background-color: rgba(230,230,230,1.0); }
+pre.virgin { padding-left: 0px; padding-right: 0px; font-size: 85%; background-color: transparent; margin-top: 0px; margin-bottom: 0px; }
+tt { padding-left: 2px; padding-right: 2px; font-size: 85%; background-color: rgba(220,220,220,0.5); }
+tt.virgin { padding-left: 0px; padding-right: 0px; font-size: 85%; background-color: transparent; }
+div.digression > tt { padding-left: 0px; padding-right: 0px; font-size: 85%; background-color: transparent; }
+div.digression > p > tt { padding-left: 0px; padding-right: 0px; font-size: 85%; background-color: transparent; }
+/* Works, but not nicely:
+red { color: #f00; }
+*/
+.red { color: #f00; }
+div.outdated { display: inline-block; padding-left: 2px; padding-right: 2px; padding-top: 2px; font-size: 80%; background-color: #EEC; }
+div.digression { display: none; padding: 8px 8px 8px 8px; font-size: 80%; background-color: #EDD; }
+div.digression-closed { display: inline-block; padding: 8px 8px 8px 8px; font-size: 80%; background-color: #EDD; }
+.dig-toggle-show { outline: 0; text-decoration: none; color: #33E; display: inline-block; padding: 8px 8px 8px 8px; font-size: 11pt; background-color: #EDD; }
+.dig-toggle-hide { outline: 0; text-decoration: none; color: #33E; display: inline-block; padding: 0px 0px 4px 0px; font-size: 11pt; background-color: #EDD; }
+a { text-decoration: none; }
+div.main { font-size: 18pt; margin-left: 10px; margin-right: 100px; margin-bottom: 40px; }
+h2 { margin-top: 30px; color: #777; }
+h3 { margin-top: 30px; color: #444; }
+h4 { margin-top: 40px; color: #222; }
+a:visited { color: #7700BB; } /* visited link */
+a:hover { color: #BB00BB; } /* mouse over link */
+a:active { color: #7700BB; } /* selected link */
+a.comments:link { color: #0000BB; } /* unvisited link */
+div.comments { cursor: hand; text-align: center; display: inline-block; padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 0px; background-color: #CDE; cursor: pointer; font-family: sans; font-size: 90%; margin-top: 30px; margin-left: 10px; }
+div.footer { font-family: sans; font-size: 70%; margin-top: 40px; }
+div.footer > tt { font-size: 90%; }
+/*
+table.table { text-align: top; vertical-align: top; }
+table.table > tr { text-align: top; vertical-align: top; }
+table.table > tr > td { text-align: top; vertical-align: top; }
+*/
+/* table { border-collapse: collapse; } */
+tr { text-align: top; vertical-align: top; }
+td { text-align: top; vertical-align: top; padding-left: 8px; padding-top: 16px; }
+li { margin-top: 4px; }
+.nowrap { white-space: nowrap; }
+.cmnt { color: #888; }
+.dcmnt { color: #555; }
+hr.hrule {
+/* Thanks to http://css-tricks.com/examples/hrs/ */
+  border: 0;
+  height: 1px;
+  background: #333;
+  background-image: -webkit-linear-gradient(left, #ccc, #333, #ccc); 
+  background-image:    -moz-linear-gradient(left, #ccc, #333, #ccc); 
+  background-image:     -ms-linear-gradient(left, #ccc, #333, #ccc); 
+  background-image:      -o-linear-gradient(left, #ccc, #333, #ccc); 
+  margin: 50px 0 5px 0;
+}
+/* Thanks to SO answer of daGUY in http://stackoverflow.com/questions/2539207/ho
+w-to-change-the-strike-out-line-through-thickness-in-css */
+.strikeout {
+    position: relative;
+    padding-left: 3pt;
+    padding-right: 3pt;
+}
+.strikeout::after {
+    border-bottom: 2px solid #C33;
+    content: "";
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 50%;
+}
+.grey { color: #BBB; letter-spacing: -4px; }
+
+tt { background: transparent; }
+

@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Seqaid : Haskell Leak Eradicator</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!--div style="margin-left: 15px;">
+Want to cut to the chase?<br>
+See the bottom of the page for a concise <a href="#contrib">contribution statement</a>.
+</div-->
+
+<h2>Combing Out Global DeepSeq</h2>
+
+Control.DeepSeq and related generics/TH modules are a great tool for debugging space leaks, and also a great temptation for evading them.
+A common strategy is to start at a high level in leaking code (in the sense of high in the parse tree), finding a place where a forcing function will squash your leaks, and then working the forcer further down until the offending code has been discovered.
+For didactic purposes, let's suppose your forcing function is deepseq.
+Sometimes more than one site will have leaky code, so as the deepseq is moved down, it may have to be duplicated and branch out as well.
+<p>
+It would be nice to automate this process of refining the locations of deepseq.
+Something simple that should work is a binary partitioning of descendant expressions, into those which propagate the deepseq, and those which do not.
+Auto-recompilation and auto-profile-analysis can determine whether the change maintains leak-free behaviour, guiding the search for the smallest expressions which need forcing.
+The developer may prefer to force at a higher level, in case this minimal set is highly [ramified/-?-] (high cardinality), but mostly we're interested in those expressions deepest in the parse tree that, forced, suffice to staunch the leak.
+
+<p>
+
+The <a href="index.html">Heaply</a> page has more info on a nascent implementation.
+
+<p>
+
+Andrew Seniuk 2014
+<br>
+<tt>rasfar@gmail.com</tt>
+
+</body>
+</html>
+

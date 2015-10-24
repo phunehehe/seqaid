@@ -1,0 +1,50 @@
+
+Subject:
+
+ANN: deepseq-bounded, seqaid, leaky
+
+Body:
+
+This trio of related packages explores strictness control in a variety of ways.
+
+deepseq-bounded provides classes and generic functions to artificially force evaluation, to extents controlled by static or dynamic configuration.
+
+seqaid puts that into practise, providing a GHC plugin to auto-instrument your package with a strictness harness, which is dynamically optimisable during runtime.  This is supported directly in the GHC compilation pipeline, without requiring (or performing!) any edits to your sources.
+
+leaky is a minimal, prototypic executable that leaks space under current state-of-the-art compilation (GHC 7.8.3 -O2, at the present time).
+
+deepseq-bounded
+  hackage: https://hackage.haskell.org/package/deepseq-bounded
+  homepage: http://www.fremissant.net/deepseq-bounded
+
+seqaid
+  hackage: https://hackage.haskell.org/package/seqaid
+  homepage: http://www.fremissant.net/seqaid
+
+leaky
+  hackage: https://hackage.haskell.org/package/leaky
+  homepage: http://www.fremissant.net/leaky
+
+Reddit discussion for the three together:
+  http://www.reddit.com/r/haskell/comments/2pscxh/ann_deepseqbounded_seqaid_leaky/
+
+Easiest way to try them all, is to install seqaid and run the demo:
+
+  cabal install seqaid
+  seqaid demo
+
+This tests seqaid on a local copy of the leaky source package.
+
+It turned out to be routine to extend deepseq-bounded and seqaid to dynamically configurable parallelisation (paraid?).  Many other wrappers could be explored, too!  Maybe seqaid should be renamed to koolaid or something...
+
+It's a pretty complicated system, and just first release, so there's bound to be lots of problems.  I've not set up a bug tracker, but will maintain a casual list of bugs and feature requests at
+
+  http://www.fremissant.net/seqaid/todo.html
+
+and will set up a proper tracker if there's interest.
+
+Any issues (or comments), I'm here, or on the reddit discussion (or email).
+
+Andrew Seniuk
+rasfar on #haskell
+

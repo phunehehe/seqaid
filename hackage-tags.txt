@@ -1,0 +1,14 @@
+parallel
+leak
+space
+strictness
+forcing
+diagnostic
+remedial
+auto-instrumentation
+instrumentation
+tools
+bsd3
+ghc-plugin
+program
+library
